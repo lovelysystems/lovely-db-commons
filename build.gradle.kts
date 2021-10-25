@@ -6,8 +6,8 @@ plugins {
 }
 
 repositories {
-    maven("https://raw.github.com/lovelysystems/maven/master/releases")
     mavenCentral()
+    maven("https://raw.github.com/lovelysystems/maven/master/releases")
 }
 
 dependencies {
