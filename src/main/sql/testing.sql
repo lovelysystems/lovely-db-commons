@@ -22,6 +22,15 @@ $$
 select t.eq(expected::bigint, actual, hint)
 $$ language sql immutable;
 
+-- explicit override for comparing json values since
+-- there is no json=json operator
+create or replace function t.eq(expected json,
+                                actual json,
+                                hint text default '') returns void as
+$$
+select t.eq(expected::jsonb, actual::jsonb, hint)
+$$ language sql immutable;
+
 create or replace function t.raises(stmt text, msg_pattern text default null, hint text default '') returns void as
 $$
 declare

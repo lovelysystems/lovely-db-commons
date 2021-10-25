@@ -1,9 +1,9 @@
--- inline tests for t.raises
+-- test exception assertions
 
 create function raise_ex() returns void as
 $$
 begin
-    raise 'my_exception' using hint='my hint';
+    raise 'my_exception' using hint = 'my hint';
 end;
 $$ language plpgsql stable;
 
@@ -38,3 +38,20 @@ select t.raises(
            );
 
 drop function raise_ex;
+
+
+-- test equality assertions
+
+select t.raises('select t.eq(1,2);', null, 'should raise since numers are not equal');
+
+-- numerics
+select t.eq(1, 1, 'identical numerics should be equal');
+select t.eq(1, 1::bigint, 'comparing to bigint with an int is possible');
+
+-- json to json comparison
+select t.eq('{}'::json, '{}'::json, 'json values (not only jsonb) can be compared');
+
+
+
+
+
