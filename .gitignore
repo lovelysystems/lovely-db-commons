@@ -1,0 +1,8 @@
+build/
+/.idea/
+.gradle
+*.iml
+/sandbox/
+.DS_Store
+out
+*.bak
