@@ -1,0 +1,22 @@
+$schema: "http://json-schema.org/draft-04/schema"
+
+id: ImageReference
+type: object
+required:
+  - digest
+additionalProperties: false
+
+properties:
+  digest:
+    type: string
+    pattern: '^[0-9a-f]{40}$'
+  proc:
+    type: string
+  caption:
+    type: string
+  displaySize:
+    enum:
+      - S
+      - M
+      - L
+      - XL

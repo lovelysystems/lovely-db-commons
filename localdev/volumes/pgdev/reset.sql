@@ -11,4 +11,7 @@ create database app;
 
 \connect app
 
-\i /app/schema/sql/testing.sql
+\i testing.sql
+\i microschema.sql
+\i register_microschemas.sql
+
