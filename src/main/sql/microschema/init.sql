@@ -34,10 +34,11 @@ $$ LANGUAGE plpython3u immutable;
 
 create domain json_schema as jsonb not null check ( microschema.validate_schema(VALUE) is null );
 
-create table microschema.json_schemas (
+create table json_schemas (
     id text primary key,
     body json_schema
 );
+grant select on json_schemas to public;
 
 create or replace function microschema.register(text) returns boolean
     language plpgsql as
