@@ -3,15 +3,16 @@ grant usage on schema microschema to public;
 set search_path to microschema;
 
 
-CREATE or replace FUNCTION microschema.yaml2json(raw text, schema_id text default null)
+CREATE or replace FUNCTION microschema.yaml2json(doc text, schema_id text default null)
     RETURNS json
 AS
 $$
-if raw is None:
+if doc is None:
     return None
 import yaml, json
 from yaml import CLoader as Loader
-d = yaml.load(raw, Loader=Loader)
+
+d = yaml.load(doc, Loader=Loader)
 if d is None:
     return None
 return json.dumps(d, separators=(',', ':'))
@@ -66,17 +67,19 @@ END
 $$ set search_path from current;
 
 
-create or replace function validated_json(schema_body json_schema, raw text) returns jsonb
+create or replace function validated_json(schema_body json_schema, doc text) returns jsonb
     language plpython3u
     immutable as
 $$
-if raw is None:
+if doc is None:
     return None
 import yaml, json
 from yaml import CLoader as Loader
-data_dict = yaml.load(raw, Loader=Loader)
+
+data_dict = yaml.load(doc, Loader=Loader)
 
 from jsonschema.validators import validator_for
+
 schema = json.loads(schema_body)
 cls = validator_for(schema, default=None)
 if not cls:
@@ -84,17 +87,41 @@ if not cls:
     raise Exception(f"no validator found for schema {ident}")
 validator = validator = cls(schema)
 from jsonschema import exceptions
+
 error = exceptions.best_match(validator.iter_errors(data_dict))
 if error is not None:
     raise error
 return json.dumps(data_dict, separators=(',', ':'))
 $$;
+comment on function validated_json is
+    E'parses and validates doc (yaml or json) against the given schema body and returns the doc as jsonb';
 
-create or replace function parse_with_schema(schema_id text, raw text) returns jsonb
+
+
+create or replace function parse_with_schema(schema_id text, doc text) returns jsonb
     language sql
     immutable as
 $$
-select validated_json((select body from json_schemas where id = schema_id), raw);
+select validated_json((select body from json_schemas where id = schema_id), doc);
 $$ set search_path from current;
 comment on function parse_with_schema is
-    E'Checks raw yaml or json data against a registered microschema and returns it as jsonb';
+    E'parses and validates a doc (yaml or json) against a registered microschema and returns it as jsonb';
+
+create or replace function check_doc(schema_id text, doc text) returns boolean
+    language sql
+    immutable as
+$$
+select case
+           when doc is null then null
+           else parse_with_schema(schema_id, doc::text) is not null
+           end;
+$$ set search_path from current;
+comment on function check_doc is
+    E'Checks a document (either yaml or json) against a registered microschema';
+
+create or replace function check_doc(schema_id text, doc jsonb) returns boolean
+    language sql
+    immutable as
+$$
+select check_doc(schema_id, doc::text)
+$$ set search_path from current;

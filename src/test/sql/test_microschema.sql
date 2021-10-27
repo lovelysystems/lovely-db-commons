@@ -40,6 +40,15 @@ $$); $stmt$,
            );
 
 
+
+select t.eq(null, check_doc('Person', null), 'the check function always returns null on null input');
+
+-- invalid docs produce an exception
+select t.raises($stmt$select check_doc('Person', '{}');$stmt$, '%''name'' is a required property%');
+
+select t.eq(true, check_doc('Person', 'name: Marvin'), 'true gets returned on valid docs');
+
+
 create table docs (
     id serial8 primary key,
     schema_name text references microschema.json_schemas (id),

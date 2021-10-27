@@ -2,13 +2,12 @@ $schema: "http://json-schema.org/draft-04/schema"
 
 id: Person
 type: object
+required:
+  - name
 properties:
-  firstName:
+  name:
     type: string
-    description: The person's first name.
-  lastName:
-    type: string
-    description: The person's last name.
+    description: The person's name.
   age:
     description: Age in years which must be equal to or greater than zero.
     type: integer
