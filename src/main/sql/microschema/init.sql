@@ -1,7 +1,6 @@
 create schema if not exists microschema;
 grant usage on schema microschema to public;
 set search_path to microschema;
-create extension if not exists plpython3u;
 
 
 CREATE or replace FUNCTION microschema.yaml2json(raw text, schema_id text default null)
@@ -21,13 +20,14 @@ $$ LANGUAGE plpython3u immutable;
 CREATE or replace FUNCTION microschema.validate_schema(schema_body jsonb) returns text as
 $$
 import json
-from jsonschema.validators import validator_for
+from jsonschema.validators import validator_for, meta_schemas
 
 schema = json.loads(schema_body)
 validator = validator_for(schema, default=None)
 if not validator:
     schemaIdent = schema.get('$schema')
-    raise Exception(f"no validator found for schema:{schemaIdent}")
+    supportedSchemas = list(meta_schemas.keys())
+    raise Exception(f"no validator found for schema: {schemaIdent} supported schemas are {supportedSchemas}")
 validator.check_schema(schema)
 $$ LANGUAGE plpython3u immutable;
 
@@ -44,16 +44,18 @@ create or replace function microschema.register(text) returns boolean
 $$
 DECLARE
     existing  json_schemas;
+    schema_id text;
     json_body jsonb;
 BEGIN
     select yaml2json($1) into json_body;
-    SELECT * INTO existing FROM json_schemas WHERE id = json_body ->> 'id';
+    select coalesce(json_body ->> '$id', json_body ->> 'id') into schema_id;
+    SELECT * INTO existing FROM json_schemas WHERE id = schema_id;
     IF NOT FOUND THEN
-        insert into json_schemas (id, body) values (json_body ->> 'id', json_body);
+        insert into json_schemas (id, body) values (schema_id, json_body);
         return true;
     else
         if json_body <> existing.body then
-            update json_schemas set body=json_body where id = json_body ->> 'id';
+            update json_schemas set body=json_body where id = schema_id;
             return true;
         else
             return false;

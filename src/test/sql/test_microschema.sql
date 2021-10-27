@@ -25,7 +25,7 @@ select microschema.register($$
   "id": "MyAwesomeContentType"
 }
 $$); $stmt$,
-                '%no validator found for schema:http://unknown-schema%'
+                '%no validator found for schema: http://unknown-schema%'
            );
 
 -- schema gets validated
