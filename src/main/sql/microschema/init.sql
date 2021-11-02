@@ -18,17 +18,18 @@ if d is None:
 return json.dumps(d, separators=(',', ':'))
 $$ LANGUAGE plpython3u immutable;
 
-CREATE or replace FUNCTION validate_schema(schema_body jsonb) returns text
+CREATE or replace FUNCTION validated_schema(schema_body text) returns jsonb
     LANGUAGE plpython3u
     immutable as
 $$
 if schema_body is None:
     return None
 
-import json
 from jsonschema.validators import validator_for, meta_schemas
+import yaml, json
+from yaml import CLoader as Loader
 
-schema = json.loads(schema_body)
+schema = yaml.load(schema_body, Loader=Loader)
 
 schema_id = schema.get('$schema')
 if not schema_id:
@@ -41,17 +42,20 @@ if not meta_schema:
 
 validator = validator_for(schema)
 validator.check_schema(schema)
+return json.dumps(schema, separators=(',', ':'))
 $$;
 
-
-create domain json_schema as jsonb check ( microschema.validate_schema(VALUE) is null );
 
 create table json_schemas (
     id text primary key,
     raw text,
-    body json_schema,
-    bundled json_schema
+    body jsonb,
+    bundled jsonb
 );
+
+comment on column json_schemas.raw is 'The raw body of the schema in yaml or json format';
+comment on column json_schemas.body is 'The parsed body of the schema as a json object';
+comment on column json_schemas.bundled is 'The schema with inlined dependencies as a json object, used for validation';
 
 grant select on json_schemas to public;
 
@@ -66,7 +70,7 @@ BEGIN
     if raw_schema is null then
         RAISE EXCEPTION 'Schema body is null';
     end if;
-    select yaml2json(raw_schema) into json_body;
+    select validated_schema(raw_schema) into json_body;
     if json_body is null then
         RAISE EXCEPTION 'Schema cannot be converted to json %', json_body;
     end if;
@@ -93,7 +97,7 @@ END
 $$ set search_path from current;
 
 
-create or replace function validated_json(schema_body json_schema, doc text) returns jsonb
+create or replace function validated_doc(schema_body jsonb, doc text) returns jsonb
     language plpython3u
     immutable as
 $$
@@ -122,7 +126,7 @@ if error is not None:
     raise error
 return json.dumps(data_dict, separators=(',', ':'))
 $$;
-comment on function validated_json is
+comment on function validated_doc is
     E'parses and validates doc (yaml or json) against the given schema body and returns the doc as jsonb';
 
 
@@ -131,7 +135,7 @@ create or replace function parse_with_schema(schema_id text, doc text) returns j
     language sql
     immutable as
 $$
-select validated_json((select bundled from json_schemas where id = schema_id), doc);
+select validated_doc((select bundled from json_schemas where id = schema_id), doc);
 $$ set search_path from current;
 comment on function parse_with_schema is
     E'parses and validates a doc (yaml or json) against a registered microschema and returns it as jsonb';

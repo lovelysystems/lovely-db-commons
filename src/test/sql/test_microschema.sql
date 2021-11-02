@@ -40,7 +40,7 @@ $$); $stmt$,
 
 -- schema gets validated
 select t.raises($stmt$
-select microschema.validate_schema($$
+select microschema.validated_schema($$
 {
   "$schema": "http://json-schema.org/draft-04/schema",
   "id": 1
