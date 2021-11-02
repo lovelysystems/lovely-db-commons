@@ -3,7 +3,7 @@ import com.lovelysystems.db.testing.PGTestSettings
 
 val settings = PGTestSettings(
     clientImage = "lovelysystems/lovely-db-commons:dev",
-    serverImage = "lovelysystems/docker-postgres:0.1.0-4-g79ee176",
+    serverImage = "lovelysystems/docker-postgres:12.8.0",
     defaultDB = "app",
     resetScripts = listOf("/pgdev/reset.sql")
 ) {

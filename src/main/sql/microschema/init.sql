@@ -18,30 +18,44 @@ if d is None:
 return json.dumps(d, separators=(',', ':'))
 $$ LANGUAGE plpython3u immutable;
 
-CREATE or replace FUNCTION microschema.validate_schema(schema_body jsonb) returns text as
+CREATE or replace FUNCTION validate_schema(schema_body jsonb) returns text
+    LANGUAGE plpython3u
+    immutable as
 $$
+if schema_body is None:
+    return None
+
 import json
 from jsonschema.validators import validator_for, meta_schemas
 
 schema = json.loads(schema_body)
-validator = validator_for(schema, default=None)
-if not validator:
-    schemaIdent = schema.get('$schema')
-    supportedSchemas = list(meta_schemas.keys())
-    raise Exception(f"no validator found for schema: {schemaIdent} supported schemas are {supportedSchemas}")
+
+schema_id = schema.get('$schema')
+if not schema_id:
+    raise Exception(f"no $schema defined in {schema}")
+
+meta_schema = meta_schemas.get(schema_id)
+if not meta_schema:
+    allowed_schemas = list(meta_schemas.keys())
+    raise Exception(f"schema: {schema_id} not in supported schemas: {allowed_schemas}")
+
+validator = validator_for(schema)
 validator.check_schema(schema)
-$$ LANGUAGE plpython3u immutable;
+$$;
 
 
-create domain json_schema as jsonb not null check ( microschema.validate_schema(VALUE) is null );
+create domain json_schema as jsonb check ( microschema.validate_schema(VALUE) is null );
 
 create table json_schemas (
     id text primary key,
-    body json_schema
+    raw text,
+    body json_schema,
+    bundled json_schema
 );
+
 grant select on json_schemas to public;
 
-create or replace function microschema.register(text) returns boolean
+create or replace function microschema.register(raw_schema text) returns boolean
     language plpgsql as
 $$
 DECLARE
@@ -49,15 +63,27 @@ DECLARE
     schema_id text;
     json_body jsonb;
 BEGIN
-    select yaml2json($1) into json_body;
+    if raw_schema is null then
+        RAISE EXCEPTION 'Schema body is null';
+    end if;
+    select yaml2json(raw_schema) into json_body;
+    if json_body is null then
+        RAISE EXCEPTION 'Schema cannot be converted to json %', json_body;
+    end if;
     select coalesce(json_body ->> '$id', json_body ->> 'id') into schema_id;
+
+    if schema_id is null then
+        RAISE EXCEPTION 'Unable to extract id from schema: %', json_body;
+    end if;
+
     SELECT * INTO existing FROM json_schemas WHERE id = schema_id;
+
     IF NOT FOUND THEN
-        insert into json_schemas (id, body) values (schema_id, json_body);
+        insert into json_schemas (id, raw, body) values (schema_id, raw_schema, json_body);
         return true;
     else
-        if json_body <> existing.body then
-            update json_schemas set body=json_body where id = schema_id;
+        if $1 <> existing.raw then
+            update json_schemas set raw=raw_schema, body=json_body where id = schema_id;
             return true;
         else
             return false;
@@ -79,6 +105,9 @@ from yaml import CLoader as Loader
 data_dict = yaml.load(doc, Loader=Loader)
 
 from jsonschema.validators import validator_for
+
+if schema_body is None:
+    return None
 
 schema = json.loads(schema_body)
 cls = validator_for(schema, default=None)
@@ -102,7 +131,7 @@ create or replace function parse_with_schema(schema_id text, doc text) returns j
     language sql
     immutable as
 $$
-select validated_json((select body from json_schemas where id = schema_id), doc);
+select validated_json((select bundled from json_schemas where id = schema_id), doc);
 $$ set search_path from current;
 comment on function parse_with_schema is
     E'parses and validates a doc (yaml or json) against a registered microschema and returns it as jsonb';
@@ -124,4 +153,55 @@ create or replace function check_doc(schema_id text, doc jsonb) returns boolean
     immutable as
 $$
 select check_doc(schema_id, doc::text)
+$$ set search_path from current;
+
+
+create or replace function schema_deps(schema jsonb) returns setof text
+    language sql
+    immutable as
+$$
+select distinct jsonb_path_query(schema, '$.**."$ref"') #>> '{}';
+$$;
+
+create or replace function schema_deps(schema_id text) returns setof text
+    language sql
+    stable as
+$$
+WITH RECURSIVE deps AS (
+    select schema_deps(body) as dep_id
+    from json_schemas
+    where id = schema_id
+    union
+    select schema_deps(body)
+    from json_schemas js
+             join deps on id = deps.dep_id and id <> schema_id)
+select dep_id
+from deps
+where dep_id <> schema_id;
+$$ set search_path from current;
+
+
+create or replace function bundled_schema(schema_id text) returns jsonb
+    language sql
+    stable as
+$$
+select jsonb_set(
+               s.body, ARRAY ['$defs'],
+               coalesce(s.body -> '$defs', '{}') ||
+               coalesce(
+                       (select jsonb_object_agg(deps.id, deps.body)
+                        from json_schemas deps
+                        where deps.id in (select schema_deps(schema_id))),
+                       '{}')
+           )
+from json_schemas s
+where s.id = schema_id;
+$$ set search_path from current;
+
+create or replace function compute_schema_bundles() returns void
+    language sql
+    volatile as
+$$
+update json_schemas
+set bundled = bundled_schema(id);
 $$ set search_path from current;
