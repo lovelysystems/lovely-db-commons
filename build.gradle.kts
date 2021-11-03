@@ -17,12 +17,10 @@ dependencies {
 }
 
 tasks.withType<Test> {
+    // always run tests
+    outputs.upToDateWhen {false}
     useJUnitPlatform()
     dependsOn("buildDockerImage")
-    // add the sql files to the classpath of the test task to re-execute if a file changes
-    classpath += fileTree("src/test/sql")
-    classpath += fileTree("src/main/sql")
-    classpath += fileTree("src/main/json_schema")
     testLogging {
         showStandardStreams = true
         events = setOf(PASSED, SKIPPED, FAILED)
