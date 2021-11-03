@@ -10,5 +10,9 @@ drop database if exists app;
 create database app;
 
 \connect app
+create extension plpython3u;
 
-\i /app/schema/sql/testing.sql
+\i testing.sql
+\i microschema/init.sql
+\i microschema/register_microschemas.sql
+

@@ -1,0 +1,16 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+
+$id: Person
+type: object
+required:
+  - name
+properties:
+  name:
+    type: string
+    description: The person's name.
+  age:
+    description: Age in years which must be equal to or greater than zero.
+    type: integer
+    minimum: 0
+  image:
+    $ref: "ImageReference"

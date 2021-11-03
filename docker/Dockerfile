@@ -1,2 +1,2 @@
-FROM  lovelysystems/docker-postgres:0.1.0-3-gf89c7ec-client
+FROM  lovelysystems/docker-postgres:12.8.0-client
 COPY schema schema
