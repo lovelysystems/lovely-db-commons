@@ -13,6 +13,47 @@ $$), $${
 }$$::json);
 
 
+-- strip empty tests
+select t.eq(null, microschema.jsonb_strip_empty(null));
+select t.eq(null, microschema.jsonb_strip_empty('{}'::jsonb));
+select t.eq(null, microschema.jsonb_strip_empty('{
+  "x": null
+}'::jsonb));
+select t.eq(null, microschema.jsonb_strip_empty('{
+  "x": {
+    "y": null
+  }
+}'::jsonb));
+
+select t.eq(null, microschema.jsonb_strip_empty('{
+  "x": {
+    "y": {}
+  }
+}'::jsonb));
+
+select t.eq('{
+  "z": 1
+}'::jsonb, microschema.jsonb_strip_empty('{
+  "x": {
+    "y": {}
+  },
+  "z": 1
+}'::jsonb));
+
+select t.eq('{
+  "z": []
+}'::jsonb, microschema.jsonb_strip_empty('{
+  "x": {
+    "y": {}
+  },
+  "z": []
+}'::jsonb));
+
+select t.raises($stmt$
+select microschema.jsonb_strip_empty('[]')
+$stmt$, '%jsonb_strip_empty requires an object, got: []');
+
+
 select t.eq(yaml2json(null), null, 'nulls are handled correctly');
 select t.eq(yaml2json(''), null, 'empty yaml gives null');
 

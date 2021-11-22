@@ -3,6 +3,42 @@ grant usage on schema microschema to public;
 set search_path to microschema;
 
 
+create or replace function jsonb_strip_empty(d jsonb) returns jsonb
+    language plpython3u
+    immutable as
+$$
+if d is None:
+    return None
+
+import json
+
+data = json.loads(d)
+
+if not isinstance(data, dict):
+    plpy.error(f"jsonb_strip_empty requires an object, got: {data}")
+
+if not data:
+    return None
+
+
+def stripper(data):
+    new_data = {}
+    for k, v in data.items():
+        if isinstance(v, dict):
+            v = stripper(v)
+        if not v in (u'', None, {}):
+            new_data[k] = v
+    return new_data or None
+
+
+data = stripper(data)
+if data:
+    return json.dumps(data, separators=(',', ':'))
+$$;
+
+comment on function jsonb_strip_empty(jsonb) is
+    'strips any empty strings, empty objects and null values recursively from the given jsonb object';
+
 CREATE or replace FUNCTION microschema.yaml2json(doc text, schema_id text default null)
     RETURNS json
 AS
