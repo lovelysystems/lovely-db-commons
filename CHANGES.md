@@ -1,6 +1,6 @@
 # Changes for lovely-db-commons
 
-## unreleased
+## 2021-12-09 / 0.0.2
 
 ### Feature
 
