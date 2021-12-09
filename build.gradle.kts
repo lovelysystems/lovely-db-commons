@@ -1,7 +1,7 @@
 import org.gradle.api.tasks.testing.logging.TestLogEvent.*
 
 plugins {
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.6.0"
     id("com.lovelysystems.gradle") version "1.6.1"
 }
 
