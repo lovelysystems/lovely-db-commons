@@ -50,8 +50,3 @@ select t.eq(1, 1::bigint, 'comparing to bigint with an int is possible');
 
 -- json to json comparison
 select t.eq('{}'::json, '{}'::json, 'json values (not only jsonb) can be compared');
-
-
-
-
-

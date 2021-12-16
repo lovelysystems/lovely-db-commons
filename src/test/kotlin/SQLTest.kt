@@ -1,5 +1,6 @@
 import com.lovelysystems.db.testing.DBTest
 import com.lovelysystems.db.testing.PGTestSettings
+import org.junit.jupiter.api.Test
 
 val settings = PGTestSettings(
     clientImage = "lovelysystems/lovely-db-commons:dev",
@@ -14,6 +15,12 @@ val settings = PGTestSettings(
 
 }
 
-class TestingTest : DBTest(settings.copy(testFilePattern = "*_testing.sql"))
+class TestingTest : DBTest(settings.copy(testFilePattern = "*_testing.sql")) {
+
+    @Test
+    fun `json schemas are tested`() {
+        pg.client.runFiles("/app/schema/sql/t/test_json_schemas.sql")
+    }
+}
 
 class MicroschemaTest : DBTest(settings.copy(testFilePattern = "*_microschema.sql"))

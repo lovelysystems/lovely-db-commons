@@ -12,7 +12,7 @@ create database app;
 \connect app
 create extension plpython3u;
 
-\i testing.sql
+\i t/init.sql
 \i microschema/init.sql
 \i microschema/register_microschemas.sql
 

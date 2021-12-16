@@ -1,5 +1,16 @@
 # Changes for lovely-db-commons
 
+## unreleased
+
+### Feature
+
+- added `test_json_schemas.sql` script to run microschema content tests
+
+### Breaking
+
+- all testing related scripts are now under the the `t` directory to follow the naming convention to
+  name directories according to their db schema.
+
 ## 2021-12-09 / 0.0.2
 
 ### Feature
