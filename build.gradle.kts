@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation("com.lovelysystems:lovely-db-testing:0.0.2")
+    testImplementation("com.lovelysystems:lovely-db-testing:0.0.4")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation(kotlin("test-junit5"))
 }
