@@ -1,5 +1,11 @@
 # Changes for lovely-db-commons
 
+## unreleased
+
+### Feature
+
+- switched to postgres 14.1 as base postgres version
+
 ## 2021-12-17 / 0.0.3
 
 ### Feature

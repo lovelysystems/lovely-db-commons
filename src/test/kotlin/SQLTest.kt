@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 
 val settings = PGTestSettings(
     clientImage = "lovelysystems/lovely-db-commons:dev",
-    serverImage = "lovelysystems/docker-postgres:12.9.0",
+    serverImage = "lovelysystems/docker-postgres:14.1.0",
     defaultDB = "app",
     resetScripts = listOf("/pgdev/reset.sql")
 ) {
