@@ -4,7 +4,8 @@
 
 ### Feature
 
-- switched to postgres 14.1 as base postgres version
+- multiplatform docker build
+- switched to postgres 16.x as base postgres version
 
 ## 2021-12-17 / 0.0.3
 

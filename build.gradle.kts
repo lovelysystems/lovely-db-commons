@@ -2,7 +2,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.*
 
 plugins {
     kotlin("jvm") version "1.6.0"
-    id("com.lovelysystems.gradle") version "1.6.1"
+    id("com.lovelysystems.gradle") version "1.15.0"
 }
 
 repositories {
@@ -18,7 +18,7 @@ dependencies {
 
 tasks.withType<Test> {
     // always run tests
-    outputs.upToDateWhen {false}
+    outputs.upToDateWhen { false }
     useJUnitPlatform()
     dependsOn("buildDockerImage")
     testLogging {
@@ -30,8 +30,7 @@ tasks.withType<Test> {
 
 lovely {
     gitProject()
-    dockerProject("lovelysystems/lovely-db-commons")
-    with(dockerFiles) {
+    dockerProject("lovelysystems/lovely-db-commons") {
         from("docker")
         from("src/main/sql") {
             into("schema/sql")
