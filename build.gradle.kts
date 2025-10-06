@@ -30,7 +30,7 @@ tasks.withType<Test> {
 
 lovely {
     gitProject()
-    dockerProject("lovelysystems/lovely-db-commons") {
+    dockerProject("ghcr.io/lovelysystems/lovely-db-commons") {
         from("docker")
         from("src/main/sql") {
             into("schema/sql")
